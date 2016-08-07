@@ -82,6 +82,95 @@ mixolydian.scale.2octave<-mode.scale(major.interval,start=5,no.octave=2,rep.name
 find.arpeggio("dominant","nineth")
 
 
+major.interval<-c(2,2,1,2,2,2,1)
+major.penta.interval<-c(2,2,3,2,3)
+major.rel.pitch<-cumu(major.interval)
+major.penta.rel.pitch<-cumu(major.penta.interval)
+major.solmization<-1:7
+major.penta.solmization<-c(1,2,3,5,6)
+
+
+
+#defining scale s4 object
+
+scale.profile<-setClass(
+  "scale.profile",
+  
+  # slots
+  slots = c(
+     name = "character"
+    ,interval = "integer"
+    ,interval.char = "character"
+    ,relative.pitch = "integer"
+    ,somization = "character"
+    ,family = "character"
+    ,no.notes = "integer"
+  ),
+  validity = function(object){
+    if(sum(object@interval)!=12){
+      return("The interval does not apply to 12 equal temperaments.")
+    }
+    return(TRUE)
+  }
+         )
+
+setGeneric(name = "GenScale",
+           def = function(name,family,interval){
+             standardGeneric("GenScale")
+           })
+
+setMethod(f = "GenScale",
+          definition = function(name,family,interval){
+            scale<-scale.profile()
+            scale@name<-name
+            scale@interval<-as.integer(interval)
+            scale@interval.char<-intvl.char(interval)
+            scale@relative.pitch<-as.integer(cumu(interval))
+            scale@family<-family
+            scale@no.notes<-length(interval)
+            if(scale@no.notes%in%c(5,7)){
+              scale@somization<-solmztn.name(interval)
+            }
+            return(scale)
+          })
+
+
+
+intvl.char<-function(interval){
+  intvl.vect<-c("H","W","WH")
+  return(intvl.vect[interval])
+}
+
+solmztn.name<-function(interval){
+  scale<-cumu(interval)
+  if(length(interval)==5){
+    comp.pitch<-major.penta.rel.pitch
+    solm<-major.penta.solmization
+  }else{
+    comp.pitch<-major.rel.pitch
+    solm<-major.solmization
+  }
+  diff<-as.integer(scale-comp.pitch)[1:length(interval)]
+  shp.flt<-sapply(diff,sharp.flat)
+  solm<-paste(solm,shp.flt,sep="")
+  return(solm)
+}
+
+
+
+
+
+
+major.family.mode<-c("Ionian","Dorian","Phrygian","Lydian","Mixolydian","Aolian","Locrian")
+
+mode.df<-data.frame()
+mode.seq.no<-1
+for(mode in major.family.mode){
+  interval<-rep(major.interval,2)[mode.seq.no+0:7]
+  interval.char<-paste(interval,collapse=",")
+  mode.df<-rbind(c(mode,"Major scale family",interval.char))
+  assign(mode,GenScale(mode,"Major scale family",interval))
+}
 
 
 
@@ -90,4 +179,61 @@ find.arpeggio("dominant","nineth")
 
 
 
+setClass(
+  "test",
+  slot=c(
+    s1="s4"
+  )
+)
 
+
+
+
+
+
+setGeneric(name="setLocation",
+           def=function(theObject,position)
+           {
+             standardGeneric("setLocation")
+           }
+)
+
+setMethod(f="setLocation",
+          signature="Agent",
+          definition=function(theObject,position)
+          {
+            theObject@location <- position
+            validObject(theObject)
+            return(theObject)
+          }
+)
+
+
+Agent <- setClass(
+  # Set the name for the class
+  "Agent",
+  
+  # Define the slots
+  slots = c(
+    location = "numeric",
+    velocity   = "numeric",
+    active   = "logical"
+  ),
+  
+  # Set the default values for the slots. (optional)
+  prototype=list(
+    location = c(0.0,0.0),
+    active   = TRUE,
+    velocity = c(0.0,0.0)
+  ),
+  
+  # Make a function that can test to see if the data is consistent.
+  # This is not called if you have an initialize function defined!
+  validity=function(object)
+  {
+    if(sum(object@velocity^2)>100.0) {
+      return("The velocity level is out of bounds.")
+    }
+    return(TRUE)
+  }
+)
